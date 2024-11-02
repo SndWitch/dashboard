@@ -112,7 +112,7 @@ fig, axes = plt.subplots(1, 2, figsize=(35, 15))
 
 # Plot for the most sold product categories
 sns.barplot(ax=axes[0], x=product_category_sales_df.head(5).values, y=product_category_sales_df.head(5).index, palette=colors)
-axes[0].set_title("Top 5 Most Sold Product Categories", fontsize=50, loc="center")
+axes[0].set_title("Top 5 Most Sold Product Categories", fontsize=40, loc="center")
 axes[0].set_xlabel("Number of Sales", fontsize=30)
 axes[0].set_ylabel(None)
 axes[0].tick_params(axis='y', labelsize=35)
@@ -120,7 +120,7 @@ axes[0].tick_params(axis='x', labelsize=30)
 
 # Plot for the least sold product categories
 sns.barplot(ax=axes[1], x=product_category_sales_df.tail(5).values, y=product_category_sales_df.tail(5).index, palette=colors)
-axes[1].set_title("Top 5 Least Sold Product Categories", fontsize=50, loc="center")
+axes[1].set_title("Top 5 Least Sold Product Categories", fontsize=40, loc="center")
 axes[1].set_ylabel(None)
 axes[1].set_xlabel("Number of Sales", fontsize=30)
 axes[1].invert_xaxis()
