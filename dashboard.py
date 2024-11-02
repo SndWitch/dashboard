@@ -7,7 +7,7 @@ sns.set(style='dark')
 
 def create_monthly_orders_df(df):
     df['order_purchase_timestamp'] = pd.to_datetime(df['order_purchase_timestamp'])
-    monthly_orders_df = df.resample(rule='4M', on='order_purchase_timestamp').agg({
+    monthly_orders_df = df.resample(rule='M', on='order_purchase_timestamp').agg({
         "order_id": "nunique",
         "price_less_freight": "sum"
     })
@@ -55,11 +55,37 @@ def create_rfm_df(df):
 
 all_df = pd.read_csv("all_data.csv")
 order_review_df = pd.read_csv("order_reviews_clean.csv")
+all_df['order_purchase_timestamp'] = pd.to_datetime(all_df['order_purchase_timestamp'])
 
-monthly_orders_df = create_monthly_orders_df(all_df)
-bystate_df = create_bystate_df(all_df)
-product_category_sales_df = create_product_category_sales_df(all_df)
-rfm_df = create_rfm_df(all_df)
+min_date = all_df["order_purchase_timestamp"].min()
+max_date = all_df["order_purchase_timestamp"].max()
+
+
+date_ranges = pd.date_range(start=min_date, end=max_date, freq='MS')
+
+with st.sidebar:
+    # Memilih bulan awal dan bulan akhir
+    start_month = st.selectbox(
+        label='Pilih Bulan Awal',
+        options=date_ranges,
+        format_func=lambda date: date.strftime('%Y-%m')
+    )
+
+    end_month = st.selectbox(
+        label='Pilih Bulan Akhir',
+        options=[date for date in date_ranges if date >= start_month],
+        format_func=lambda date: date.strftime('%Y-%m')
+    )
+
+# Filter data berdasarkan rentang bulan yang dipilih
+main_df = all_df[(all_df["order_purchase_timestamp"] >= start_month) & 
+                 (all_df["order_purchase_timestamp"] <= end_month + pd.DateOffset(months=1) - pd.DateOffset(days=1))]
+
+
+monthly_orders_df = create_monthly_orders_df(main_df)
+bystate_df = create_bystate_df(main_df)
+product_category_sales_df = create_product_category_sales_df(main_df)
+rfm_df = create_rfm_df(main_df)
 review_count_df = create_review_count_df(order_review_df)
 
 st.header('Proyek Analisis Data: E-Commerce Public Dataset')
@@ -78,15 +104,15 @@ with col2:
 
 fig, ax = plt.subplots(figsize=(10, 5))
 plt.plot(monthly_orders_df["order_purchase_timestamp"], monthly_orders_df["order_count"], marker='o', linewidth=2, color="#72BCD4")
-plt.title("Number of Orders per 4 Month", loc="center", fontsize=20)
-plt.xticks(fontsize=12)
+plt.title("Number of Orders per Month", loc="center", fontsize=20)
+plt.xticks(rotation=45, fontsize=12)
 plt.yticks(fontsize=12)
 st.pyplot(fig)
 
 fig, ax = plt.subplots(figsize=(10, 5))
 plt.plot(monthly_orders_df["order_purchase_timestamp"], monthly_orders_df["revenue"], marker='o', linewidth=2, color="#72BCD4")
-plt.title("Total Revenue per 4 Month", loc="center", fontsize=20)
-plt.xticks(fontsize=10)
+plt.title("Total Revenue per Month", loc="center", fontsize=20)
+plt.xticks(rotation=45, fontsize=10)
 plt.yticks(fontsize=10)
 st.pyplot(fig)
 
@@ -112,7 +138,7 @@ fig, axes = plt.subplots(1, 2, figsize=(35, 15))
 
 # Plot for the most sold product categories
 sns.barplot(ax=axes[0], x=product_category_sales_df.head(5).values, y=product_category_sales_df.head(5).index, palette=colors)
-axes[0].set_title("Top 5 Most Sold Product Categories", fontsize=40, loc="center")
+axes[0].set_title("Top 5 Most Sold Product Categories", fontsize=50, loc="center")
 axes[0].set_xlabel("Number of Sales", fontsize=30)
 axes[0].set_ylabel(None)
 axes[0].tick_params(axis='y', labelsize=35)
@@ -120,7 +146,7 @@ axes[0].tick_params(axis='x', labelsize=30)
 
 # Plot for the least sold product categories
 sns.barplot(ax=axes[1], x=product_category_sales_df.tail(5).values, y=product_category_sales_df.tail(5).index, palette=colors)
-axes[1].set_title("Top 5 Least Sold Product Categories", fontsize=40, loc="center")
+axes[1].set_title("Top 5 Least Sold Product Categories", fontsize=50, loc="center")
 axes[1].set_ylabel(None)
 axes[1].set_xlabel("Number of Sales", fontsize=30)
 axes[1].invert_xaxis()
@@ -133,16 +159,6 @@ axes[1].tick_params(axis='x', labelsize=30)
 plt.tight_layout()
 st.pyplot(fig)
 
-#Membuat visualisasi persebaran ratings
-st.subheader("Rating Counts")
-colors = ["#D3D3D3", "#D3D3D3", "#D3D3D3", "#D3D3D3" ,"#72BCD4"]
-
-fig, ax = plt.subplots(figsize=(8, 4))
-sns.barplot(x=review_count_df.index, y=review_count_df.values, palette=colors)
-plt.xlabel("Rating")
-plt.ylabel(None)
-plt.title("Number of Reviews per Rating")
-st.pyplot(fig)
 
 #Membuat visualisasi rfm_df
 st.subheader("Best Customer Based on RFM Parameters")
@@ -186,4 +202,15 @@ ax[2].tick_params(axis='y', labelsize=30)
 ax[2].tick_params(axis='x', labelsize=35)
 
 plt.suptitle("Best Customer Based on RFM Parameters (customer_id)", fontsize=20)
+st.pyplot(fig)
+
+#Membuat visualisasi persebaran ratings
+st.subheader("Ratings All the Time")
+colors = ["#D3D3D3", "#D3D3D3", "#D3D3D3", "#D3D3D3" ,"#72BCD4"]
+
+fig, ax = plt.subplots(figsize=(8, 4))
+sns.barplot(x=review_count_df.index, y=review_count_df.values, palette=colors)
+plt.xlabel("Rating")
+plt.ylabel(None)
+plt.title("Number of Reviews per Rating")
 st.pyplot(fig)
